@@ -1,5 +1,5 @@
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.TeleOperated;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import java.util.logging.Logger;
@@ -21,7 +21,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import java.util.Arrays;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
-import org.firstinspires.ftc.teamcode.RobotController;
+import org.firstinspires.ftc.teamcode.NonOpModes.RobotController;
 import org.firstinspires.ftc.teamcode.NonOpModes.PIDController;
 
 /**

@@ -1,5 +1,5 @@
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.NonOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 
 
-public class RobotController extends GyroAbsolute{
+public class RobotController {
     // Declare OpMode members.
     public ElapsedTime runtime;
     private LinearOpMode opMode;

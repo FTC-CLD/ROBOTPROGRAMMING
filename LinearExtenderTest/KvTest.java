@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import org.firstinspires.ftc.robotcore.external.android.AndroidAccelerometer;
 import org.firstinspires.ftc.robotcore.external.android.AndroidOrientation;
-import org.firstinspires.ftc.teamcode.RobotController;
+import org.firstinspires.ftc.teamcode.NonOpModes.RobotController;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name = "KvTest", group = "Extender")
