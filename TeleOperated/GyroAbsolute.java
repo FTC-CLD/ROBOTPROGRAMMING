@@ -41,71 +41,38 @@ import org.firstinspires.ftc.teamcode.NonOpModes.PIDController;
 
 public class GyroAbsolute extends LinearOpMode {
     private DcMotor extender;
-    public RobotController robot;
-    PIDController robotAngle;
-    BNO055IMU imu;
+    public RobotController r;
     double targetangle = 0;
     
-    public double angleDifference(double heading, double targetAngle) {
-        // Calculates the angle difference. Always between -180 and 180
-        return ((targetAngle-heading+Math.PI) % (2*Math.PI) -  Math.PI);
-    }
+
     
-    public double distance(double x,double y) {
-        return Math.sqrt(x*x+y*y);
-    }
-    
-    public void PUSHER(double value) {
-        RobotController.pusher.setPosition(value);
-    }
     
     
     @Override
     public void runOpMode() {
         // Support class for robot control
-        robot = new RobotController(this);
-        robot.Init();
-        int Ku = 3;
-        double Tu = 0.45;
-        robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
-        robotAngle.setInputRange(0, 10000);
-        robotAngle.setOutputRange(0, 0.2);
-        robotAngle.enable();
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-        parameters.loggingEnabled = true;
-        parameters.loggingTag = "IMU";
-        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
-        extender = hardwareMap.dcMotor.get("Extender");
-        extender.setMode(DcMotor.RunMode.RESET_ENCODERS);
-        extender.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        extender.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        r = new RobotController(this);
+        r.Init();
+
+
         
         targetangle = 0;
         waitForStart();
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             
-            robot.BasicLoopTele();
+            r.BasicLoopTele();
         
             //Here is the code you will need for reading the heading of the IMU
             //you may have to adjust which of X, Y, and Z you are reading based on your orientation of the hub
             //you can use this wherever you need to use the heading value in teleop loop or inside an autonomous loop for turning for example
-            Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            double heading = (angles.firstAngle);
-            telemetry.addData("Heading", heading);
-            heading = Math.toRadians(heading);
-            
+            double heading = r.heading();
             // Calculates the robot X and robot Y velocity with respect to its heading
             double robotX = gamepad1.left_stick_x*Math.cos(heading) - gamepad1.left_stick_y*Math.sin(heading);
             double robotY = gamepad1.left_stick_x*Math.sin(heading) + gamepad1.left_stick_y*Math.cos(heading);
             
             // calculate how far the joystick is from its centre position
-            double distance = distance(gamepad1.right_stick_x, gamepad1.right_stick_y);
+            double distance = r.distance(gamepad1.right_stick_x, gamepad1.right_stick_y);
             telemetry.addData("Distance", distance);
             double turn = 0;
             if (distance != 0) {
@@ -114,24 +81,15 @@ public class GyroAbsolute extends LinearOpMode {
                 // Here a PID can improve the accuracy
 
             }
-            double error = -angleDifference(targetangle, heading);
+            double error = -r.angleDifference(targetangle, heading);
             telemetry.addData("error", error );
-            turn = robotAngle.performPID(error);
+            turn = r.robotAngle.performPID(error);
             telemetry.addData("turnCorrection",turn );
             
             // Drives the robot with these calculated values
-            robot.DriveSimple(robotX, robotY, turn, 0.18+gamepad1.right_trigger*0.82);
+            r.DriveSimple(robotX, robotY, turn, 0.18+gamepad1.right_trigger*0.82);
             
-            
-        double speed = gamepad2.left_stick_y*0.4;
-        telemetry.addData("speed", speed);
-        telemetry.addData("position",extender.getCurrentPosition());
-        if ((extender.getCurrentPosition() >= 0 && speed > 0) || (extender.getCurrentPosition() <= -820 && speed < 0)) {
-          speed = 0;
-        }
-        telemetry.addData("speed with correction", speed);
-        extender.setPower(speed);
-        robot.GripBlock.setPosition(1-gamepad2.left_trigger);
+
     
             
         }

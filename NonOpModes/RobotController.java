@@ -2,6 +2,12 @@
 package org.firstinspires.ftc.teamcode.NonOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -40,6 +46,9 @@ public class RobotController {
     public static Servo pusher = null;
     public static AnalogInput GripButton;   
     public DistanceSensor distanceSensor;
+    public PIDController robotAngle;
+    public double targetangle = 0;
+    BNO055IMU imu;
     public static int timer = 0;
     public static double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
     final public static double[] forward = {1,1,1,1}, right = {-1,1,0.9,-0.9}, turnclock = {-1,1,-1,1};
@@ -73,12 +82,37 @@ public class RobotController {
             opMode.telemetry.addData("distance sensor limit", distanceSensor.distanceOutOfRange);
             opMode.telemetry.update();
         } while (opMode.opModeIsActive() && (Double.isNaN(distance) || distance > 10));
+        extender.setPower(0);
         extender.setMode(DcMotor.RunMode.RESET_ENCODERS);
+        extender.setPower(0);
         extender.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        extender.setPower(0);
     }
     
     public double getExtenderPosition() {
-        return extender.getCurrentPosition()*posToY+1.6;
+        return extender.getCurrentPosition()*posToY+2.4;
+    }
+    
+    public void DriveGyro() {
+        double heading = heading();
+        // Calculates the robot X and robot Y velocity with respect to its heading
+        double robotX = opMode.gamepad1.left_stick_x*Math.cos(heading) - opMode.gamepad1.left_stick_y*Math.sin(heading);
+        double robotY = opMode.gamepad1.left_stick_x*Math.sin(heading) + opMode.gamepad1.left_stick_y*Math.cos(heading);
+        
+        // calculate how far the joystick is from its centre position
+        double distance = distance(opMode.gamepad1.right_stick_x, opMode.gamepad1.right_stick_y);
+        double turn = 0;
+        if (distance != 0) {
+          targetangle = Math.atan2( -opMode.gamepad1.right_stick_x, -opMode.gamepad1.right_stick_y);
+        
+        
+        }
+        double error = -angleDifference(targetangle, heading);
+        
+        turn = robotAngle.performPID(error);
+        // Drives the robot with these calculated values
+        DriveSimple(robotX, robotY, turn, 0.18+opMode.gamepad1.right_trigger*0.5);
+          
     }
     // Function that takes x, y relative speeds as input and maps it to the power of the different wheel motors
     public void DriveSimple(double x, double y, double turn, double speed){
@@ -162,6 +196,19 @@ public class RobotController {
         driveMotors[1].setDirection(DcMotor.Direction.FORWARD);
         driveMotors[2].setDirection(DcMotor.Direction.REVERSE);
         driveMotors[3].setDirection(DcMotor.Direction.FORWARD);
+        
+        
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
+        parameters.loggingEnabled = true;
+        parameters.loggingTag = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+        imu = opMode.hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+        targetangle = 0;
+        
         dt = 0.01;
         prevtime = -0.01;
         IsUp = false;
@@ -173,6 +220,12 @@ public class RobotController {
         Init();
         opMode.waitForStart();
         runtime = new ElapsedTime();
+        int Ku = 3;
+        double Tu = 0.45;
+        robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
+        robotAngle.setInputRange(0, 10000);
+        robotAngle.setOutputRange(0, 0.2);
+        robotAngle.enable();
     }
     public void resetRuntime() {
         runtime = new ElapsedTime();
@@ -182,6 +235,21 @@ public class RobotController {
             prevtime = runtime.time();
             opMode.telemetry.update();
             timer++;
+    }
+    
+    public double heading() {
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
+        double heading = (angles.firstAngle);
+        return heading;
+    }
+    
+    public double angleDifference(double heading, double targetAngle) {
+        // Calculates the angle difference. Always between -180 and 180
+        return ((targetAngle-heading+Math.PI) % (2*Math.PI) -  Math.PI);
+    }
+    
+    public double distance(double x,double y) {
+        return Math.sqrt(x*x+y*y);
     }
     
 }
