@@ -2,6 +2,7 @@
 package org.firstinspires.ftc.teamcode.NonOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import java.lang.reflect.Array;
@@ -12,7 +13,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import java.util.Arrays;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /**
  * This file contains an minimal example of a Linear "OpMode". An OpMode is a 'program' that runs in either
@@ -34,7 +38,8 @@ public class RobotController {
     public static  Servo GripBlock = null, Capstone = null, Pusher = null, Foundation1, Foundation2;
     public static DcMotor extender = null; 
     public static Servo pusher = null;
-    public static AnalogInput GripButton;       
+    public static AnalogInput GripButton;   
+    public DistanceSensor distanceSensor;
     public static int timer = 0;
     public static double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
     final public static double[] forward = {1,1,1,1}, right = {-1,1,0.9,-0.9}, turnclock = {-1,1,-1,1};
@@ -43,24 +48,37 @@ public class RobotController {
     extenderUp = true, foundationDown;
     
     // Extender 
-    final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0;
+    final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0, kV = 0.011, kA = 0.004;
 
     
     public RobotController(LinearOpMode opModeIn) {
         opMode = opModeIn;
     }
     
-    public double getK(double position,double velocity) {
-        if (velocity>0) {
-           return position*(0.26-0.190)/54+0.2;
+    
+    public void resetExtender() {
+        extender.setMode(DcMotor.RunMode.RUN_USING_ENCODERS);
+        
+        double distance = distanceSensor.getDistance(DistanceUnit.CM);
+        if (distance < 10) {
+            extender.setPower(0.2);
+            do {
+                distance = distanceSensor.getDistance(DistanceUnit.CM);
+            } while (opMode.opModeIsActive() && distance < 10);
         }
-        else {
-           return (position>25)?(-0.01+position*(0.26-0.190)/54):-0.013; 
-        }
+        extender.setPower(-0.2);
+        do {
+            distance = distanceSensor.getDistance(DistanceUnit.CM);
+            opMode.telemetry.addData("distance sensor", distance);
+            opMode.telemetry.addData("distance sensor limit", distanceSensor.distanceOutOfRange);
+            opMode.telemetry.update();
+        } while (opMode.opModeIsActive() && (Double.isNaN(distance) || distance > 10));
+        extender.setMode(DcMotor.RunMode.RESET_ENCODERS);
+        extender.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
     }
     
     public double getExtenderPosition() {
-        return extender.getCurrentPosition()*posToY;
+        return extender.getCurrentPosition()*posToY+1.6;
     }
     // Function that takes x, y relative speeds as input and maps it to the power of the different wheel motors
     public void DriveSimple(double x, double y, double turn, double speed){
@@ -136,6 +154,7 @@ public class RobotController {
         GripBlock = opMode.hardwareMap.get(Servo.class, "GripBlock");
         Capstone = opMode.hardwareMap.get(Servo.class, "Capstone");
         
+        distanceSensor = opMode.hardwareMap.get(DistanceSensor.class, "sensorColor");
         
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
