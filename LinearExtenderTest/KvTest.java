@@ -38,31 +38,31 @@ public class KvTest extends LinearOpMode {
     }
   }
   
-  public void initState(ExtenderState state) {
+  public void initState(ExtenderState state, double position) {
     switch(state) {
       case Searching:
-        mp = new MotionProfile(position, 2, 18, 40);
+        mp = new MotionProfile(position, 4, 10, 40);
         r.GripBlock.setPosition(1);
         // code block
         break;
       case Grabbing:
-        mp = new MotionProfile(position, 0, 18, 40);
+        mp = new MotionProfile(position, 0, 10, 40);
         // code block
         break;
       case Lifting:
-        mp = new MotionProfile(position, index*10+5, 18, 40);
+        mp = new MotionProfile(position, index*10+5, 10, 40);
         r.GripBlock.setPosition(0);
         break;
       case Placing:
-        mp = new MotionProfile(position, index*10+2, 18, 40);
+        mp = new MotionProfile(position, index*10+2, 10, 40);
         r.GripBlock.setPosition(0);
         break;
       case AwayDriving:
-        mp = new MotionProfile(position, index*10+5, 18, 40);
+        mp = new MotionProfile(position, index*10+5, 10, 40);
         r.GripBlock.setPosition(1);
         break;
       case UnderBridge:
-        mp = new MotionProfile(position, 0, 18, 40);
+        mp = new MotionProfile(position, 0, 10, 40);
         r.GripBlock.setPosition(0);
         index++;
         break;
@@ -104,13 +104,13 @@ public class KvTest extends LinearOpMode {
     
     r.resetExtender();
 
-    double position = r.getExtenderPosition();
+    position = r.getExtenderPosition();
     
     PIDFController pidf = new PIDFController(0,0,0);//0.07,0.04,0.004);
     pidf.enable();
     pidf.reset();
     double newTime = r.runtime.time();
-    initState(state);
+    initState(state, position);
     
     double targetangle = 0;
     
@@ -119,6 +119,7 @@ public class KvTest extends LinearOpMode {
       position = r.getExtenderPosition();
       double t = r.runtime.time() - newTime;
       double power = pidf.performPIDF(position, mp.getPos(t), mp.getV(t), mp.getA(t));
+      r.extender.setPower(power);
       boolean a = gamepad1.a, b = gamepad1.b, up = gamepad1.dpad_up, down = gamepad1.dpad_down;
       if (state == ExtenderState.Grabbing &&  t > mp.tTotal+0.5) {
         r.GripBlock.setPosition(0);
@@ -133,7 +134,7 @@ public class KvTest extends LinearOpMode {
         newState = true;
       }
       if (newState) {
-        initState(state);
+        initState(state, position);
         pidf.reset();
         newTime = r.runtime.time();
       }
@@ -160,14 +161,14 @@ public class KvTest extends LinearOpMode {
       telemetry.addData("position", position) ;
       telemetry.addData("index", index) ;
       telemetry.addData("t", t);
+      telemetry.addData("dt", r.dt);
       telemetry.addData("speed", (position-prevposition)/r.dt);
       telemetry.addData("power", power);
       telemetry.addData("error", pidf.getError());
-      r.extender.setPower(power);
       telemetry.update();
       prevposition = position;
-      sleep(50);
-      pidf.setPID(0.04,0.01,0.01);
+      pidf.setPID(0.01,0.01,0.01);
+      idle();
     }
   }
 }

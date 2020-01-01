@@ -57,8 +57,7 @@ public class PIDController
             // Integrate the errors as long as the upcoming integrator does
             // not exceed the minimum and maximum output thresholds.
 
-            if ((Math.abs(m_totalError + m_error*dt) * m_I < m_maximumOutput) &&
-                    (Math.abs(m_totalError + m_error*dt) * m_I > m_minimumOutput))
+            if (Math.abs(m_totalError + m_error*dt) * m_I < m_maximumOutput)
                 m_totalError += m_error*dt;
 
             // Perform the primary PID calculation
@@ -68,13 +67,10 @@ public class PIDController
             m_prevError = m_error;
 
             if (m_result < 0) sign = -1;    // Record sign of result.
-
             // Make sure the final result is within bounds. If we constrain the result, we make
             // sure the sign of the constrained result matches the original result sign.
             if (Math.abs(m_result) > m_maximumOutput)
                 m_result = m_maximumOutput * sign;
-            else if (Math.abs(m_result) < m_minimumOutput)
-                m_result = m_minimumOutput * sign;
             prevt = runtime.time();
         }
         
@@ -162,10 +158,6 @@ public class PIDController
      *  be the same point and automatically calculates the shortest route to
      *  the setpoint.
      */
-    public void setContinuous() 
-    {
-        this.setContinuous(true);
-    }
 
     /**
      * Sets the maximum and minimum values expected from the input.
@@ -233,26 +225,6 @@ public class PIDController
         return m_error;
     }
 
-    /**
-     * Set the percentage error which is considered tolerable for use with
-     * OnTarget. (Input of 15.0 = 15 percent)
-     * @param percent error which is tolerable
-     */
-    public void setTolerance(double percent) 
-    {
-        m_tolerance = percent;
-    }
-
-    /**
-     * Return true if the error is within the percentage of the total input range,
-     * determined by setTolerance. This assumes that the maximum and minimum input
-     * were set using setInputRange.
-     * @return true if the error is less than the tolerance
-     */
-    public boolean onTarget()
-    {
-        return (Math.abs(m_error) < Math.abs(m_tolerance / 100.0 * (m_maximumInput - m_minimumInput)));
-    }
 
     /**
      * Begin running the PIDController

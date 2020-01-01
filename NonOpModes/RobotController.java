@@ -103,9 +103,8 @@ public class RobotController {
         double distance = distance(opMode.gamepad1.right_stick_x, opMode.gamepad1.right_stick_y);
         double turn = 0;
         if (distance != 0) {
-          targetangle = Math.atan2( -opMode.gamepad1.right_stick_x, -opMode.gamepad1.right_stick_y);
-        
-        
+          //targetangle = Math.atan2(opMode.gamepad1.right_stick_x , -opMode.gamepad1.right_stick_y);
+          targetangle += opMode.gamepad1.right_stick_x*dt;
         }
         double error = -angleDifference(targetangle, heading);
         

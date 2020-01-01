@@ -78,7 +78,7 @@ public class PIDFController
 
             // Perform the primary PID calculation
             // The D term is changed to account for the speed at which the system has to be moving
-            m_result = m_P * m_error + m_I * m_totalError + m_D * ((m_input - prevInput)/dt-v) + v * kV + a*kA + getK(m_input, v);
+            m_result = m_P * m_error + m_I * m_totalError + m_D * (v-(m_input - prevInput)/dt) + v * kV + a*kA + getK(m_input, v);
 
             // Set the current error to the previous error for the next cycle.
             m_prevError = m_error;
