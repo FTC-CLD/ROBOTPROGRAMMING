@@ -49,18 +49,20 @@ public class LedControlTest extends LinearOpMode
             
             double heading = (angles.firstAngle);
             
-            heading+= 180;
+            // heading+= 180;
+            // telemetry.addData("Heading", heading);
+            // heading *=12/360.0;
+            // for (int i=0;i<12;i++) {
+            //     int temp = Math.max((int)Math.round(60*(1.0-Math.abs(heading-i))),0);
+            //     telemetry.addData("Led", temp);
+            //     telemetry.addData("AndereKleur", (int)Math.round(0.6*(100-temp)));
+            //     ledControl.setLed(i, temp,(int)Math.round(0.3*(100-temp)),(int)Math.round(0.3*temp));
+            // }
+            heading+=180;
             telemetry.addData("Heading", heading);
-            heading *=12/360.0;
-            for (int i=0;i<12;i++) {
-                int temp = Math.max((int)Math.round(60*(1.0-Math.abs(heading-i))),0);
-                telemetry.addData("Led", temp);
-                telemetry.addData("AndereKleur", (int)Math.round(0.6*(100-temp)));
-                ledControl.setLed(i, temp,(int)Math.round(0.3*(100-temp)),(int)Math.round(0.3*temp));
-            }
+            ledControl.setCompass((int)Math.round(heading));
             
-            
-            
+            sleep(100);
             telemetry.addData("counter=", counter);
             
             telemetry.update();

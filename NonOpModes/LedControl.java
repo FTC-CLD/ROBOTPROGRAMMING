@@ -41,6 +41,15 @@ public class LedControl extends I2cDeviceSynchDevice<I2cDeviceSynch>
     }
 
     
+    public void setCompass(int heading) {
+        if (heading<0) {heading+=360;}
+        int hibyte = heading>>8;
+        byte[] i2cbuf;
+        i2cbuf = new byte[2];
+        i2cbuf[0]=(byte)(hibyte&0xff);
+        i2cbuf[1]=(byte)(heading&0xff);
+        writeByteArr(Register.COMPASS,i2cbuf,2);
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Read and Write Methods
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +73,8 @@ public class LedControl extends I2cDeviceSynchDevice<I2cDeviceSynch>
     public enum Register
     {
         FIRST(0),
-        RGBLED(0x01);
+        RGBLED(0x01),
+        COMPASS(0x02);
         
         public int bVal;
 

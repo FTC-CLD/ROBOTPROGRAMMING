@@ -34,7 +34,7 @@ public class KvTest extends LinearOpMode {
     }
     
     public ExtenderState prev() {
-        return vals[(this.ordinal()-1) % vals.length];
+        return vals[(this.ordinal()-1+vals.length) % vals.length];
     }
   }
   
@@ -64,7 +64,7 @@ public class KvTest extends LinearOpMode {
       case UnderBridge:
         mp = new MotionProfile(position, 0, 10, 40);
         r.GripBlock.setPosition(0);
-        index++;
+        if (index<5) index++;
         break;
       default:
         // code block
@@ -145,11 +145,17 @@ public class KvTest extends LinearOpMode {
       if (up&&!prevUp) {
         if (index<5) {
           index++;
+          initState(state, position);
+          pidf.reset();
+          newTime = r.runtime.time();
         }
       }
       else if(down&&!prevDown) {
         if (index>0) {
           index--;
+          initState(state, position);
+          pidf.reset();
+          newTime = r.runtime.time();
         }
       }
       prevDown = down;

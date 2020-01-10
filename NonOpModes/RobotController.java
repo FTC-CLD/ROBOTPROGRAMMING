@@ -2,6 +2,7 @@
 package org.firstinspires.ftc.teamcode.NonOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -46,9 +47,13 @@ public class RobotController {
     public static Servo pusher = null;
     public static AnalogInput GripButton;   
     public DistanceSensor distanceSensor;
+    public ColorSensor sensorColor;
     public PIDController robotAngle;
     public double targetangle = 0;
     BNO055IMU imu;
+    public double x,  y, heading;
+    public double rx, ry, r, hr;
+    
     public static int timer = 0;
     public static double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
     final public static double[] forward = {1,1,1,1}, right = {-1,1,0.9,-0.9}, turnclock = {-1,1,-1,1};
@@ -63,6 +68,33 @@ public class RobotController {
     public RobotController(LinearOpMode opModeIn) {
         opMode = opModeIn;
     }
+    
+    
+    
+    // functie om simpel (zonder smooth p.) te rijden in de autonomous en bij het plaatsen van de capstone
+    public void driveAutoInit(double targetx, double targety, double angle, double r, double hoekr){
+        heading = heading();
+        targetangle = angle;
+        hr = hoekr;
+        double distancetotarget = Math.sqrt((x-targetx)*(x-targetx)+(y-targety)*(y-targety));
+        rx = targetx + r*(targetx-x)/distancetotarget;
+        ry = targety + r*(targety-y)/distancetotarget;
+        
+    }
+    
+    public boolean driveFinished() {
+        return opMode.opModeIsActive() && ((x-rx)*(x-rx)+(y-ry)*(y-ry) > r*r || Math.abs(heading-targetangle) < hr);
+    }
+    
+    public boolean IsSkystone() {
+        double distance = distanceSensor.getDistance(DistanceUnit.CM);
+        if (Double.isNaN(distance)){
+            return true;
+        }
+        double temp = (1.0*sensorColor.red())/sensorColor.blue();
+        opMode.telemetry.addData("Skystone", temp);
+        return temp < 1.25;//*(distance*distance)
+    } 
     
     
     public void resetExtender() {
@@ -94,7 +126,7 @@ public class RobotController {
     }
     
     public void DriveGyro() {
-        double heading = heading();
+        heading = heading();
         // Calculates the robot X and robot Y velocity with respect to its heading
         double robotX = opMode.gamepad1.left_stick_x*Math.cos(heading) - opMode.gamepad1.left_stick_y*Math.sin(heading);
         double robotY = opMode.gamepad1.left_stick_x*Math.sin(heading) + opMode.gamepad1.left_stick_y*Math.cos(heading);
@@ -104,8 +136,8 @@ public class RobotController {
         double turn = 0;
         if (distance != 0) {
           //targetangle = Math.atan2(opMode.gamepad1.right_stick_x , -opMode.gamepad1.right_stick_y);
-          targetangle += opMode.gamepad1.right_stick_x*dt;
-        }
+          targetangle -= opMode.gamepad1.right_stick_x*0.5*dt;
+        } 
         double error = -angleDifference(targetangle, heading);
         
         turn = robotAngle.performPID(error);
@@ -188,6 +220,7 @@ public class RobotController {
         Capstone = opMode.hardwareMap.get(Servo.class, "Capstone");
         
         distanceSensor = opMode.hardwareMap.get(DistanceSensor.class, "sensorColor");
+        sensorColor = opMode.hardwareMap.get(ColorSensor.class, "sensorColor");
         
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
@@ -224,7 +257,7 @@ public class RobotController {
         robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
         robotAngle.setInputRange(0, 10000);
         robotAngle.setOutputRange(0, 0.2);
-        robotAngle.enable();
+        robotAngle.enable(); 
     }
     public void resetRuntime() {
         runtime = new ElapsedTime();
