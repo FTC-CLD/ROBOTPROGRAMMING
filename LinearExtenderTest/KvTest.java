@@ -41,28 +41,28 @@ public class KvTest extends LinearOpMode {
   public void initState(ExtenderState state, double position) {
     switch(state) {
       case Searching:
-        mp = new MotionProfile(position, 4, 10, 40);
+        mp = new MotionProfile(position, 4, 15, 40);
         r.GripBlock.setPosition(1);
         // code block
         break;
       case Grabbing:
-        mp = new MotionProfile(position, 0, 10, 40);
+        mp = new MotionProfile(position, 0, 15, 40);
         // code block
         break;
       case Lifting:
-        mp = new MotionProfile(position, index*10+5, 10, 40);
+        mp = new MotionProfile(position, index*10+7, 15, 40);
         r.GripBlock.setPosition(0);
         break;
       case Placing:
-        mp = new MotionProfile(position, index*10+2, 10, 40);
+        mp = new MotionProfile(position, index*10+3, 10, 40);
         r.GripBlock.setPosition(0);
         break;
       case AwayDriving:
-        mp = new MotionProfile(position, index*10+5, 10, 40);
+        mp = new MotionProfile(position, index*10+7, 15, 40);
         r.GripBlock.setPosition(1);
         break;
       case UnderBridge:
-        mp = new MotionProfile(position, 0, 10, 40);
+        mp = new MotionProfile(position, 0, 15, 40);
         r.GripBlock.setPosition(0);
         if (index<5) index++;
         break;
@@ -121,7 +121,7 @@ public class KvTest extends LinearOpMode {
       double power = pidf.performPIDF(position, mp.getPos(t), mp.getV(t), mp.getA(t));
       r.extender.setPower(power);
       boolean a = gamepad1.a, b = gamepad1.b, up = gamepad1.dpad_up, down = gamepad1.dpad_down;
-      if (state == ExtenderState.Grabbing &&  t > mp.tTotal+0.5) {
+      if (state == ExtenderState.Grabbing &&  t > mp.tTotal+0.06) {
         r.GripBlock.setPosition(0);
       }
       newState = false;
@@ -173,7 +173,7 @@ public class KvTest extends LinearOpMode {
       telemetry.addData("error", pidf.getError());
       telemetry.update();
       prevposition = position;
-      pidf.setPID(0.01,0.01,0.01);
+      pidf.setPID(0.04,0.05,0.01);
       idle();
     }
   }

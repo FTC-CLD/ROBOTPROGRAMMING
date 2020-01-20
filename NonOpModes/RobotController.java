@@ -136,13 +136,13 @@ public class RobotController {
         double turn = 0;
         if (distance != 0) {
           //targetangle = Math.atan2(opMode.gamepad1.right_stick_x , -opMode.gamepad1.right_stick_y);
-          targetangle -= opMode.gamepad1.right_stick_x*0.5*dt;
+          targetangle -= opMode.gamepad1.right_stick_x*1.2*dt;
         } 
         double error = -angleDifference(targetangle, heading);
         
         turn = robotAngle.performPID(error);
         // Drives the robot with these calculated values
-        DriveSimple(robotX, robotY, turn, 0.18+opMode.gamepad1.right_trigger*0.5);
+        DriveSimple(robotX, robotY, turn, 0.23+opMode.gamepad1.right_trigger*0.45);
           
     }
     // Function that takes x, y relative speeds as input and maps it to the power of the different wheel motors
@@ -256,7 +256,7 @@ public class RobotController {
         double Tu = 0.45;
         robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
         robotAngle.setInputRange(0, 10000);
-        robotAngle.setOutputRange(0, 0.2);
+        robotAngle.setOutputRange(0, 0.3);
         robotAngle.enable(); 
     }
     public void resetRuntime() {
