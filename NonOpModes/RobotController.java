@@ -1,6 +1,7 @@
 
 package org.firstinspires.ftc.teamcode.NonOpModes;
-
+import org.firstinspires.ftc.teamcode.NonOpModes.Extender;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
@@ -38,14 +39,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 
 public class RobotController {
+    
     // Declare OpMode members.
     public ElapsedTime runtime;
     private LinearOpMode opMode;
     public DcMotor[] driveMotors = {null,null,null,null};
-    public static  Servo GripBlock = null, Capstone = null, Pusher = null, Foundation1, Foundation2;
-    public static DcMotor extender = null; 
-    public static Servo pusher = null;
-    public static AnalogInput GripButton;   
+    public Servo GripBlock = null, Capstone = null, Foundation1, Foundation2;
+    public DcMotor extender = null; 
+    public Extender manageExtender;
     public DistanceSensor distanceSensor;
     public ColorSensor sensorColor;
     public PIDController robotAngle;
@@ -55,15 +56,19 @@ public class RobotController {
     public double rx, ry, r, hr;
     
     public static int timer = 0;
-    public static double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
-    final public static double[] forward = {1,1,1,1}, right = {-1,1,0.9,-0.9}, turnclock = {-1,1,-1,1};
+    public double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
+    
+    // Constants for the chassis
+    final public static double[] forward = {1,1,1,1}, right = {-1,1,1,-1}, turnclock = {-1,1,-1,1};
+    final public double cmToEncode = 20.97, degreesToEncode = 1000.0/102.0;
+    
     public static double[] prevpower = {0,0,0,0};
     public static boolean gripPressed = false, foundationPressed = false, Grip = false, IsUp = false, IsDown = true, 
     extenderUp = true, foundationDown;
     
     // Extender 
     final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0, kV = 0.011, kA = 0.004;
-
+    final public double LStone = 20.3;
     
     public RobotController(LinearOpMode opModeIn) {
         opMode = opModeIn;
@@ -102,12 +107,12 @@ public class RobotController {
         
         double distance = distanceSensor.getDistance(DistanceUnit.CM);
         if (distance < 10) {
-            extender.setPower(0.2);
+            extender.setPower(0.4);
             do {
                 distance = distanceSensor.getDistance(DistanceUnit.CM);
             } while (opMode.opModeIsActive() && distance < 10);
         }
-        extender.setPower(-0.2);
+        extender.setPower(-0.15);
         do {
             distance = distanceSensor.getDistance(DistanceUnit.CM);
             opMode.telemetry.addData("distance sensor", distance);
@@ -122,14 +127,14 @@ public class RobotController {
     }
     
     public double getExtenderPosition() {
-        return extender.getCurrentPosition()*posToY+2.4;
+        return extender.getCurrentPosition()*posToY+3.8;
     }
     
     public void DriveGyro() {
         heading = heading();
         // Calculates the robot X and robot Y velocity with respect to its heading
-        double robotX = opMode.gamepad1.left_stick_x*Math.cos(heading) - opMode.gamepad1.left_stick_y*Math.sin(heading);
-        double robotY = opMode.gamepad1.left_stick_x*Math.sin(heading) + opMode.gamepad1.left_stick_y*Math.cos(heading);
+        double robotX = - opMode.gamepad1.left_stick_x*Math.cos(heading) + opMode.gamepad1.left_stick_y*Math.sin(heading);
+        double robotY = - opMode.gamepad1.left_stick_x*Math.sin(heading) - opMode.gamepad1.left_stick_y*Math.cos(heading);
         
         // calculate how far the joystick is from its centre position
         double distance = distance(opMode.gamepad1.right_stick_x, opMode.gamepad1.right_stick_y);
@@ -137,12 +142,13 @@ public class RobotController {
         if (distance != 0) {
           //targetangle = Math.atan2(opMode.gamepad1.right_stick_x , -opMode.gamepad1.right_stick_y);
           targetangle -= opMode.gamepad1.right_stick_x*1.2*dt;
+          targetangle %= Math.PI*2;
         } 
         double error = -angleDifference(targetangle, heading);
         
         turn = robotAngle.performPID(error);
         // Drives the robot with these calculated values
-        DriveSimple(robotX, robotY, turn, 0.23+opMode.gamepad1.right_trigger*0.45);
+        DriveSimple(robotX, robotY, turn, 0.25+opMode.gamepad1.right_trigger*0.55);
           
     }
     // Function that takes x, y relative speeds as input and maps it to the power of the different wheel motors
@@ -150,11 +156,9 @@ public class RobotController {
         assert speed >= 0;
         double maximum = 1;
         double[] power = {0,0,0,0};
-        if (turn > 1) turn = 1;
-        if (turn < -1) turn = -1;
         speed = Math.min(speed,1);
         for (int i = 0; i < 4; i++) {
-            // The formula for the powers is given by y*forward+x*right+turn*turnclock
+            // The formula for the powers is given by y*forward+x*right
             // forward, right and turnclock are vectors that represent the max speed in their respective direction
             power[i] = (y * forward[i] + x * right[i])*Math.min(speed,1);
             double total = power[i] + turnclock[i] * turn;
@@ -195,6 +199,90 @@ public class RobotController {
     }
     
     
+    // Turns the robot to angle and waits for this to extends
+    public void DriveRotate(double newangle) {
+
+        newangle = Math.toRadians(newangle);
+        double sign = angleDifference(newangle, targetangle);
+        targetangle = newangle;
+
+        do {
+            BasicLoopTele();
+            DriveSimple(0,0,sign*0.17,0.3);
+            heading = heading();
+
+        } while (opMode.opModeIsActive() && Math.abs(angleDifference(heading,newangle)) > 0.2);
+        robotAngle.reset();
+    }
+    
+    
+    // Drive to x,y in cm and with Speed is between 0 and 1
+    public void DriveDistance(double x, double y, double speed){
+        // Reset the encoders
+        for (int i =0; i< 4; i++) {
+            driveMotors[i].setMode(DcMotor.RunMode.RESET_ENCODERS);
+            driveMotors[i].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        }
+        for (int i = 0;i<4;i++){
+            prevpower[i] = 0;
+        }
+        double xencode = x*cmToEncode;
+        double yencode = y*cmToEncode;
+        double magnitude = Math.sqrt(x*x+y*y);
+        // Calculate the distance each wheel travels
+        double[] wheelDistances = GetWheelTurns(xencode, yencode);
+
+       
+
+        
+        
+        // sum all absolute distances
+        double sumDist = 0;
+        for (int i=0; i<4; i++) {
+            sumDist+=Math.abs(wheelDistances[i]);
+        }
+        while (opMode.opModeIsActive() && IsDriving(sumDist)) {
+            BasicLoopTele();
+            heading = heading();
+            double error = -angleDifference(targetangle, heading);
+            double turn = robotAngle.performPID(error);
+            DriveSimple(x/magnitude, y/magnitude, turn, speed);
+            //Optional parallel commands here;
+        }
+    }
+    public boolean IsDriving(double sumDist) {
+        int curPos = 0;
+        for (int i=0;i<4;i++) {
+            curPos+=Math.abs(driveMotors[i].getCurrentPosition());
+        }
+        return (curPos<sumDist);
+    }
+    public void DriveStop() {
+        for (int i=0;i<4;i++) {
+            
+            driveMotors[i].setPower(0);
+        }
+    
+    }
+    
+    public void hooksDown() {
+        Foundation1.setPosition(1);
+        Foundation2.setPosition(0);
+    }
+    
+    public void hooksUp() {
+        Foundation1.setPosition(0);
+        Foundation2.setPosition(1);
+    }
+    
+    public double[] GetWheelTurns(double x, double y) {
+        double[] distances = {0,0,0,0};
+        for (int i = 0; i < 4; i++) {
+            distances[i] = (y + x * right[i]);
+        }
+        return distances;
+    }
+    
     public void Init() {
         opMode.telemetry.addData("Status", "Initialized");
         opMode.telemetry.update();
@@ -218,7 +306,8 @@ public class RobotController {
         
         GripBlock = opMode.hardwareMap.get(Servo.class, "GripBlock");
         Capstone = opMode.hardwareMap.get(Servo.class, "Capstone");
-        
+        Foundation1 = opMode.hardwareMap.get(Servo.class, "HookL");
+        Foundation2 = opMode.hardwareMap.get(Servo.class, "HookR");
         distanceSensor = opMode.hardwareMap.get(DistanceSensor.class, "sensorColor");
         sensorColor = opMode.hardwareMap.get(ColorSensor.class, "sensorColor");
         
@@ -252,12 +341,14 @@ public class RobotController {
         Init();
         opMode.waitForStart();
         runtime = new ElapsedTime();
-        int Ku = 3;
-        double Tu = 0.45;
+        double Ku = 2.1;
+        double Tu = 0.7;
         robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
         robotAngle.setInputRange(0, 10000);
-        robotAngle.setOutputRange(0, 0.3);
+        robotAngle.setOutputRange(0, 0.9);
         robotAngle.enable(); 
+        resetExtender();
+        manageExtender = new Extender(this);
     }
     public void resetRuntime() {
         runtime = new ElapsedTime();
@@ -267,6 +358,9 @@ public class RobotController {
             prevtime = runtime.time();
             opMode.telemetry.update();
             timer++;
+            manageExtender.update();
+            opMode.telemetry.addData("state", manageExtender.state);
+            opMode.telemetry.addData("Extender Position", manageExtender.position);
     }
     
     public double heading() {
@@ -277,7 +371,7 @@ public class RobotController {
     
     public double angleDifference(double heading, double targetAngle) {
         // Calculates the angle difference. Always between -180 and 180
-        return ((targetAngle-heading+Math.PI) % (2*Math.PI) -  Math.PI);
+        return ((targetAngle-heading+5*Math.PI) % (2*Math.PI)) -  Math.PI;
     }
     
     public double distance(double x,double y) {

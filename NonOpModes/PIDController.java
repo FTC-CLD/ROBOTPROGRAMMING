@@ -249,7 +249,6 @@ public class PIDController
      */
     public void reset()
     {
-        disable();
         m_prevError = 0;
         m_totalError = 0;
         m_result = 0;
