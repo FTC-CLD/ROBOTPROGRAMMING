@@ -45,7 +45,7 @@ public class Extender {
     public void initState(ExtenderState state, double position) {
     switch(state) {
       case Searching:
-        mp = new MotionProfile(position, 6, 19, 40);
+        mp = new MotionProfile(position, 9, 19, 40);
         r.GripBlock.setPosition(1);
         // code block
         break;
@@ -130,6 +130,10 @@ public class Extender {
     
     public void enterSame() {
       enterState(state);
+    }
+    
+    public void enterCapstone() {
+      
     }
     public void update() {
       position = r.getExtenderPosition();

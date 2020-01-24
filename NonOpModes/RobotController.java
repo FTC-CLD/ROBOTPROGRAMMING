@@ -198,6 +198,11 @@ public class RobotController {
         }
     }
     
+    public void placeCapstone() {
+      if (manageExtender.state == Extender.ExtenderState.AwayDriving) {
+          
+      }
+    }
     
     // Turns the robot to angle and waits for this to extends
     public void DriveRotate(double newangle) {
@@ -232,10 +237,6 @@ public class RobotController {
         // Calculate the distance each wheel travels
         double[] wheelDistances = GetWheelTurns(xencode, yencode);
 
-       
-
-        
-        
         // sum all absolute distances
         double sumDist = 0;
         for (int i=0; i<4; i++) {
@@ -250,6 +251,45 @@ public class RobotController {
             //Optional parallel commands here;
         }
     }
+    //hetzelfde als drivedistance, maar met ramp
+    public void DriveRamp(double x, double y, double speed1, double speed2){
+        // Reset the encoders
+        for (int i =0; i< 4; i++) {
+            driveMotors[i].setMode(DcMotor.RunMode.RESET_ENCODERS);
+            driveMotors[i].setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+        }
+        for (int i = 0;i<4;i++){
+            prevpower[i] = 0;
+        }
+        double xencode = x*cmToEncode;
+        double yencode = y*cmToEncode;
+        // heb ik net verandert naar xencode van x
+        double magnitude = Math.sqrt(xencode*xencode+yencode*yencode);
+        // Calculate the distance each wheel travels
+        double[] wheelDistances = GetWheelTurns(xencode, yencode);
+
+        // sum all distances
+        double sumDist = 0;
+        for (int i=0; i<4; i++) {
+            sumDist+=Math.abs(wheelDistances[i]);
+        }
+        while (opMode.opModeIsActive() && IsDriving(sumDist)) {
+            BasicLoopTele();
+            int curPos = 0;
+            for (int i=0;i<4;i++) {
+                curPos+=Math.abs(driveMotors[i].getCurrentPosition());
+            }
+            // de power moet nog in de wielen geplugd worden
+            double speedRamp = speed1 + Math.sqrt((double)(curPos)/sumDist)*(speed2-speed1);
+            heading = heading();
+            double error = -angleDifference(targetangle, heading);
+            double turn = robotAngle.performPID(error);
+            DriveSimple(xencode/magnitude, yencode/magnitude, turn, speedRamp);
+            //Optional parallel commands here;
+        }
+    }
+    
+    
     public boolean IsDriving(double sumDist) {
         int curPos = 0;
         for (int i=0;i<4;i++) {
@@ -346,7 +386,8 @@ public class RobotController {
         robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
         robotAngle.setInputRange(0, 10000);
         robotAngle.setOutputRange(0, 0.9);
-        robotAngle.enable(); 
+        robotAngle.enable();
+        GripBlock.setPosition(1);
         resetExtender();
         manageExtender = new Extender(this);
     }
