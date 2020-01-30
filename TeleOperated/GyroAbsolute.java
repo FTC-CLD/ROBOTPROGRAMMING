@@ -66,7 +66,7 @@ public class GyroAbsolute extends LinearOpMode {
             //Here is the code you will need for reading the heading of the IMU
             //you may have to adjust which of X, Y, and Z you are reading based on your orientation of the hub
             //you can use this wherever you need to use the heading value in teleop loop or inside an autonomous loop for turning for example
-            double heading = r.heading();
+            double heading = r.getHeading();
             // Calculates the robot X and robot Y velocity with respect to its heading
             double robotX = gamepad1.left_stick_x*Math.cos(heading) - gamepad1.left_stick_y*Math.sin(heading);
             double robotY = gamepad1.left_stick_x*Math.sin(heading) + gamepad1.left_stick_y*Math.cos(heading);

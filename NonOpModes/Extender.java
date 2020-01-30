@@ -45,28 +45,28 @@ public class Extender {
     public void initState(ExtenderState state, double position) {
     switch(state) {
       case Searching:
-        mp = new MotionProfile(position, 9, 19, 40);
+        mp = new MotionProfile(position, 9, 25, 100);
         r.GripBlock.setPosition(1);
         // code block
         break;
       case Grabbing:
-        mp = new MotionProfile(position, -0.15, 15, 40);
+        mp = new MotionProfile(position, -0.15, 25, 100);
         // code block
         break;
       case Lifting:
-        mp = new MotionProfile(position, index*10.16+7, 12, 130);
+        mp = new MotionProfile(position, index*10.16+9, 29, 200);
         r.GripBlock.setPosition(Grabbing);
         break;
       case Placing:
-        mp = new MotionProfile(position, index*10.16+3, 10, 40);
+        mp = new MotionProfile(position, index*10.16+3, 20, 40);
         r.GripBlock.setPosition(Grabbing);
         break;
       case AwayDriving:
-        mp = new MotionProfile(position, index*10.16+7, 15, 40);
+        mp = new MotionProfile(position, index*10.16+7, 22, 50);
         r.GripBlock.setPosition(1);
         break;
       case UnderBridge:
-        mp = new MotionProfile(position, -0.3, 15, 50);
+        mp = new MotionProfile(position, -0.3, 29, 200);
         r.GripBlock.setPosition(Grabbing);
         if (index<5) index++;
         break;
@@ -145,6 +145,6 @@ public class Extender {
         
       }
       prevposition = position;
-      pidf.setPID(0.04,0.03,0.03);
+      pidf.setPID(0.07,0.03,0.03);
   }
 }

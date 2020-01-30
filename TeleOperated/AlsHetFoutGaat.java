@@ -12,8 +12,8 @@ import org.firstinspires.ftc.teamcode.NonOpModes.MotionProfile;
 import org.firstinspires.ftc.teamcode.NonOpModes.PIDFController;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp(name = "LeagueMeet2")
-public class LeagueMeet2 extends LinearOpMode {
+@TeleOp(name = "AlsHetfOUT")
+public class AlsHetFoutGaat extends LinearOpMode {
   
   private RobotController r;
 
@@ -26,7 +26,8 @@ public class LeagueMeet2 extends LinearOpMode {
     // Support class for robot control
     r = new RobotController(this);
 
-    r.InitAndWait();
+    r.InitExtend();
+    r.manageExtender.enterNext();
     double prevposition = 0;
     boolean prevA = false, prevB = false, prevX = false, prevY = false, prevUp = false, prevDown = false;
     
@@ -37,49 +38,6 @@ public class LeagueMeet2 extends LinearOpMode {
     while (opModeIsActive()) {
       r.BasicLoopTele();
       boolean a = gamepad1.a, b = gamepad1.b, up = gamepad1.dpad_up, down = gamepad1.dpad_down, x = gamepad1.x, y = gamepad1.y;
-
-      if (a && !prevA) {
-        r.manageExtender.enterNext();
-      }
-      else if (b && !prevB) {
-        r.manageExtender.enterPrev();
-      }
-
-      // Adds or subtracts one from the stone index height
-      if (up&&!prevUp) {
-        r.manageExtender.raise();
-      }
-      else if(down&&!prevDown) {
-        r.manageExtender.lower();
-      }
-      
-      if (x && !prevX) {
-        hooksDown = !hooksDown;
-        if (hooksDown) {
-          r.hooksDown();
-        } else {
-          r.hooksUp();
-        }
-
-      }
-      if (y && !prevY) {
-        capstoneDown = !capstoneDown;
-        if (capstoneDown) {
-          r.GripBlock.setPosition(0);
-          r.DriveDistance(-8,-9,0.2);
-          r.Capstone.setPosition(0);
-
-        } else {
-          r.Capstone.setPosition(1);
-        }
-
-      }
-      prevDown = down;
-      prevUp = up;
-      prevA = a;
-      prevB = b;
-      prevX = x;
-      prevY = y;
       
       r.DriveGyro();
       idle();

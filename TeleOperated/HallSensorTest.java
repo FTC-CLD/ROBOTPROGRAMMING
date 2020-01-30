@@ -63,6 +63,7 @@ public class HallSensorTest extends LinearOpMode
                 //telemetry.addData("errorcode=", hallSensor[i].getErr());
                 //telemetry.addData("errorstr=", hallSensor[i].getErrStr());
             }
+            
             Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
             double heading = (angles.firstAngle);
             //telemetry.addData("Heading", heading);
@@ -73,25 +74,71 @@ public class HallSensorTest extends LinearOpMode
                 dtheta -= Math.PI * 2 * Math.signum(dtheta);
             }
             
-            double dphi1 = hallSensor[0].getAngle()-prevphi1; 
-            double dphi2 = hallSensor[1].getAngle()-prevphi2; 
+            
+            double phi1 = hallSensor[0].getAngle();
+            double phi2 = hallSensor[1].getAngle();
+            
+            double dphi1 = phi1 -prevphi1; 
+            double dphi2 = phi2 -prevphi2; 
             
             double dx = dphi1 * r - dtheta * W;
             double dy = dphi2 * r - dtheta * L;
             
-            x += Math.cos(heading) * dx - Math.sin(heading)*dy;
-            y += Math.sin(heading) * dx + Math.cos(heading)*dy;
-            prevphi1 = hallSensor[0].getAngle();
-            prevphi2 = hallSensor[1].getAngle();
+            
             prevtheta = heading;
-            telemetry.addData("x", x);
-            telemetry.addData("y", y);
+            
             double t = runtime.time();
             telemetry.addData("dt", t-prevt);
+            telemetry.addData("t", t);
             prevt = t;
             telemetry.update();
             // }
             idle();
+            
+            
+            ////
+            double degToCm = 2.8725;
+            
+            double[] dP = deltaPos(heading,heading-prevtheta, dphi1*degToCm, dphi2*degToCm);
+             
+            x += dP[0];
+            y += dP[1];
+            
+            telemetry.addData("x", x);
+            telemetry.addData("y", y);
+            telemetry.addData("heading", heading);
+            
+            
+            
+            // dit is het laatste
+            prevtheta = heading;
+            prevphi1 = phi1;
+            prevphi2 = phi2;
         }
+        
+    }
+    
+    // om de positie te updaten met arcs
+    public double[] deltaPos(double H,double deltaH, double encoder1, double encoder2){
+        // H is de hoek van 1 frame geleden
+        //integraal van een rotatie van deltaH met een verschuiving van encoder 2
+        
+        double cosH = Math.cos(H);
+        double sinH = Math.sin(H);
+        //als de hoek niet verandert is
+        if (deltaH == 0){
+            double output[] = {cosH*encoder2 - sinH*encoder1, cosH*encoder1 + sinH*encoder2};
+            //return dx,dy
+            return output;
+        }
+        
+        double cosHnew = Math.cos(H + deltaH);
+        double sinHnew = Math.sin(H + deltaH);
+        
+        //als de hoek van de robot wel verandert
+        double dx = (encoder2*(sinHnew - sinH) + encoder1*(cosHnew - cosH))/deltaH;
+        double dy = (encoder1*(sinHnew - sinH) - encoder2*(cosHnew - cosH))/deltaH;
+        //return dx,dy
+        return new double[] {dx,dy};
     }
 }

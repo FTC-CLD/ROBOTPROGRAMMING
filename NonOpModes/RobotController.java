@@ -1,6 +1,8 @@
 
 package org.firstinspires.ftc.teamcode.NonOpModes;
 import org.firstinspires.ftc.teamcode.NonOpModes.Extender;
+import org.firstinspires.ftc.teamcode.NonOpModes.HallSensor;
+import org.firstinspires.ftc.teamcode.NonOpModes.Odometry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -50,16 +52,18 @@ public class RobotController {
     public DistanceSensor distanceSensor;
     public ColorSensor sensorColor;
     public PIDController robotAngle;
-    public double targetangle = 0;
+    public double targetangle = 0, endangle = 0;
+    public Odometry odometry;
+    public HallSensor hallSensor[] = {null,null};
     BNO055IMU imu;
-    public double x,  y, heading;
+    public double x=0,  y=0, heading, prevx, prevy;
     public double rx, ry, r, hr;
     
     public static int timer = 0;
     public double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
     
     // Constants for the chassis
-    final public static double[] forward = {1,1,1,1}, right = {-1,1,1,-1}, turnclock = {-1,1,-1,1};
+    final public static double[] forward = {0.9,0.9,0.9,0.9}, right = {-1,1,1,-1}, turnclock = {-1,1,-1,1};
     final public double cmToEncode = 20.97, degreesToEncode = 1000.0/102.0;
     
     public static double[] prevpower = {0,0,0,0};
@@ -75,17 +79,6 @@ public class RobotController {
     }
     
     
-    
-    // functie om simpel (zonder smooth p.) te rijden in de autonomous en bij het plaatsen van de capstone
-    public void driveAutoInit(double targetx, double targety, double angle, double r, double hoekr){
-        heading = heading();
-        targetangle = angle;
-        hr = hoekr;
-        double distancetotarget = Math.sqrt((x-targetx)*(x-targetx)+(y-targety)*(y-targety));
-        rx = targetx + r*(targetx-x)/distancetotarget;
-        ry = targety + r*(targety-y)/distancetotarget;
-        
-    }
     
     public boolean driveFinished() {
         return opMode.opModeIsActive() && ((x-rx)*(x-rx)+(y-ry)*(y-ry) > r*r || Math.abs(heading-targetangle) < hr);
@@ -127,11 +120,10 @@ public class RobotController {
     }
     
     public double getExtenderPosition() {
-        return extender.getCurrentPosition()*posToY+3.8;
+        return extender.getCurrentPosition()*posToY+3.3;
     }
     
     public void DriveGyro() {
-        heading = heading();
         // Calculates the robot X and robot Y velocity with respect to its heading
         double robotX = - opMode.gamepad1.left_stick_x*Math.cos(heading) + opMode.gamepad1.left_stick_y*Math.sin(heading);
         double robotY = - opMode.gamepad1.left_stick_x*Math.sin(heading) - opMode.gamepad1.left_stick_y*Math.cos(heading);
@@ -148,9 +140,10 @@ public class RobotController {
         
         turn = robotAngle.performPID(error);
         // Drives the robot with these calculated values
-        DriveSimple(robotX, robotY, turn, 0.25+opMode.gamepad1.right_trigger*0.55);
+        DriveSimple(robotX, robotY, turn, 0.26+opMode.gamepad1.right_trigger*0.3+opMode.gamepad1.left_trigger*0.3);
           
     }
+    
     // Function that takes x, y relative speeds as input and maps it to the power of the different wheel motors
     public void DriveSimple(double x, double y, double turn, double speed){
         assert speed >= 0;
@@ -204,8 +197,13 @@ public class RobotController {
       }
     }
     
-    // Turns the robot to angle and waits for this to extends
+    // Turns the robot to absolute angle 
     public void DriveRotate(double newangle) {
+
+        DriveRotate(newangle, 0.2);
+    }
+        // Turns the robot to absolute angle
+    public void DriveRotate(double newangle, double speed) {
 
         newangle = Math.toRadians(newangle);
         double sign = angleDifference(newangle, targetangle);
@@ -213,8 +211,7 @@ public class RobotController {
 
         do {
             BasicLoopTele();
-            DriveSimple(0,0,sign*0.17,0.3);
-            heading = heading();
+            DriveSimple(0,0,sign*speed,0.3);
 
         } while (opMode.opModeIsActive() && Math.abs(angleDifference(heading,newangle)) > 0.2);
         robotAngle.reset();
@@ -244,7 +241,6 @@ public class RobotController {
         }
         while (opMode.opModeIsActive() && IsDriving(sumDist)) {
             BasicLoopTele();
-            heading = heading();
             double error = -angleDifference(targetangle, heading);
             double turn = robotAngle.performPID(error);
             DriveSimple(x/magnitude, y/magnitude, turn, speed);
@@ -281,7 +277,6 @@ public class RobotController {
             }
             // de power moet nog in de wielen geplugd worden
             double speedRamp = speed1 + Math.sqrt((double)(curPos)/sumDist)*(speed2-speed1);
-            heading = heading();
             double error = -angleDifference(targetangle, heading);
             double turn = robotAngle.performPID(error);
             DriveSimple(xencode/magnitude, yencode/magnitude, turn, speedRamp);
@@ -297,17 +292,66 @@ public class RobotController {
         }
         return (curPos<sumDist);
     }
+    private void updateTargetAngle() {
+        if (targetangle != endangle) {
+                double sign = Math.signum(angleDifference(endangle, targetangle));
+                boolean positive = sign>0;
+                targetangle -= sign*0.8*dt;
+                if (positive ^ angleDifference(endangle,targetangle)>0) {
+                    targetangle = endangle;
+                }
+                targetangle %= Math.PI*2;
+            }
+    }
+    // Drives with the help of odometry wheels to absolute position
+    public void DriveEncode(double targetx, double targety, double speed, double r) {
+        double distance = Math.sqrt((x-targetx)*(x-targetx)+(y-targety)*(y-targety));
+        rx = targetx + r*(targetx-x)/distance;
+        ry = targety + r*(targety-y)/distance;
+        double curdist;
+        do {
+            BasicLoopTele();
+            updateTargetAngle();
+            curdist = Math.sqrt((x-rx)*(x-rx)+(y-ry)*(y-ry));
+            double drivex = (rx-x)/curdist, drivey = (ry-y)/curdist;
+            double robotX = -drivex*Math.cos(heading) - drivey*Math.sin(heading);
+            double robotY = -drivex*Math.sin(heading) + drivey*Math.cos(heading);
+            double error = -angleDifference(targetangle, heading);
+            double turn = robotAngle.performPID(error);
+            DriveSimple(robotX, robotY, turn,  speed);
+        } while (opMode.opModeIsActive() && curdist > r);
+    }
+    public void setEndAngle(double angle) {
+        endangle = Math.toRadians(angle);
+    }
+    public void DriveEncodeRamp(double targetx, double targety, double speed1, double speed2, double r) {
+        double distance = Math.sqrt((x-targetx)*(x-targetx)+(y-targety)*(y-targety));
+        rx = targetx + r*(targetx-x)/distance;
+        ry = targety + r*(targety-y)/distance;
+        double curdist;
+        do {
+            BasicLoopTele();
+            updateTargetAngle();
+            curdist = Math.sqrt((x-rx)*(x-rx)+(y-ry)*(y-ry));
+            double drivex = (rx-x)/curdist, drivey = (ry-y)/curdist;
+            double robotX = -drivex*Math.cos(heading) - drivey*Math.sin(heading);
+            double robotY = -drivex*Math.sin(heading) + drivey*Math.cos(heading);
+            double speedRamp = speed2 + Math.sqrt((double)(curdist-r)/distance)*(speed1-speed2);
+            double error = -angleDifference(targetangle, heading);
+            double turn = robotAngle.performPID(error);
+            DriveSimple(robotX, robotY, turn,  speedRamp);
+        } while (opMode.opModeIsActive() && curdist > r);
+    }
     public void DriveStop() {
         for (int i=0;i<4;i++) {
-            
             driveMotors[i].setPower(0);
         }
     
     }
     
     public void hooksDown() {
-        Foundation1.setPosition(1);
-        Foundation2.setPosition(0);
+        Foundation1.setPosition(0.9);
+        Foundation2.setPosition(0.1);
     }
     
     public void hooksUp() {
@@ -357,8 +401,8 @@ public class RobotController {
         driveMotors[1].setDirection(DcMotor.Direction.FORWARD);
         driveMotors[2].setDirection(DcMotor.Direction.REVERSE);
         driveMotors[3].setDirection(DcMotor.Direction.FORWARD);
-        
-        
+        x=0;
+        y=0;
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
@@ -377,20 +421,48 @@ public class RobotController {
         runtime = new ElapsedTime();
 
     }
-    public void InitAndWait() {
+    public void InitAuto() {
         Init();
+        hallSensor[0] = opMode.hardwareMap.get(HallSensor.class, "HallSensor1");
+        hallSensor[1] = opMode.hardwareMap.get(HallSensor.class, "HallSensor2");
+        hallSensor[0].clrErr();
+        hallSensor[1].clrErr();
+        odometry = new Odometry(this);
+    }
+        
+    private void InitWaitInside() {
         opMode.waitForStart();
-        runtime = new ElapsedTime();
-        double Ku = 2.1;
-        double Tu = 0.7;
+        double Ku = 1.2;//2.1
+        double Tu = 1.0;//0.7
         robotAngle = new PIDController(Ku*0.6, 0.2*Ku/Tu,3*Ku*Tu/40);
         robotAngle.setInputRange(0, 10000);
-        robotAngle.setOutputRange(0, 0.9);
+        robotAngle.setOutputRange(0, 0.4);
         robotAngle.enable();
         GripBlock.setPosition(1);
+    }
+    
+    public void InitAutoWait() {
+        InitAuto();
+        InitWaitInside();
         resetExtender();
+        runtime = new ElapsedTime();
         manageExtender = new Extender(this);
     }
+
+    public void InitAndWait() {
+        Init();
+        InitWaitInside();
+        resetExtender();
+        runtime = new ElapsedTime();
+        manageExtender = new Extender(this);
+    }
+    public void InitExtend() {
+        Init();
+        InitWaitInside();
+        runtime = new ElapsedTime();
+        manageExtender = new Extender(this);
+    }
+    
     public void resetRuntime() {
         runtime = new ElapsedTime();
     }
@@ -399,12 +471,20 @@ public class RobotController {
             prevtime = runtime.time();
             opMode.telemetry.update();
             timer++;
+            heading = getHeading();
+            if (odometry != null) {
+                odometry.update(heading);
+            }
+
             manageExtender.update();
+            opMode.telemetry.addData("x", x);
+            opMode.telemetry.addData("y", y);
+            opMode.telemetry.addData("dt", dt);
             opMode.telemetry.addData("state", manageExtender.state);
             opMode.telemetry.addData("Extender Position", manageExtender.position);
     }
     
-    public double heading() {
+    public double getHeading() {
         Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
         double heading = (angles.firstAngle);
         return heading;
@@ -420,5 +500,4 @@ public class RobotController {
     }
     
 }
-
 

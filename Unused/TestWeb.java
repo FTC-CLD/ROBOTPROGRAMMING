@@ -40,7 +40,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * Operation:
  *      Use the DPAD to change the selected sound, and the Right Bumper to play it.
  */
-
+@Disabled
 @TeleOp(name="HTTP test", group="Concept")
 
 public class TestWeb extends LinearOpMode {

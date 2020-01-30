@@ -44,7 +44,7 @@ import java.net.UnknownHostException;
  * Operation:
  *      Use the DPAD to change the selected sound, and the Right Bumper to play it.
  */
-
+@Disabled
 @TeleOp(name="TestSocket", group="Concept")
 
 public class TestSocket extends LinearOpMode {

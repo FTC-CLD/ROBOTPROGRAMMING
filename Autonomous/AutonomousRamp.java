@@ -1,12 +1,14 @@
 package org.firstinspires.ftc.teamcode.Autonomous;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import java.util.Locale;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.NonOpModes.RobotController;
 import org.firstinspires.ftc.teamcode.NonOpModes.Extender;
+@Disabled
 @Autonomous(name="RampoeTest", group="Linear Opmode")
 
 public class AutonomousRamp extends LinearOpMode  {

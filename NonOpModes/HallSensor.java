@@ -28,7 +28,7 @@ public class HallSensor extends I2cDeviceSynchDevice<I2cDeviceSynch>
     
     public double getAngle()
     {
-    return getAngleRaw()/4096.0*2*Math.PI;
+    return -getAngleRaw()/4096.0*2*Math.PI;
     }
 
     

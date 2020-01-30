@@ -22,7 +22,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Operation:
  *      Use the DPAD to change the selected sound, and the Right Bumper to play it.
  */
-
+@Disabled
 @TeleOp(name="TestLogFile", group="Concept")
 
 public class TestLogFile extends LinearOpMode {

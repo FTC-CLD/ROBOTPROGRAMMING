@@ -45,7 +45,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
  * Operation:
  *      Use the DPAD to change the selected sound, and the Right Bumper to play it.
  */
-
+@Disabled
 @TeleOp(name="HTTPtestert", group="Concept")
 
 public class HTTPtest extends LinearOpMode {

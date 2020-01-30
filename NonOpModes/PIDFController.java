@@ -20,7 +20,7 @@ public class PIDFController
     private double m_error = 0.0;
     private double m_result = 0.0;
     private double prevt = 0.0, a, v, pos;
-    final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0, kV = 0.01, kA = 0.002;
+    final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0, kV = 0.01, kA = 0.0001;
     private ElapsedTime runtime;
 
     /**
@@ -39,7 +39,7 @@ public class PIDFController
 
     public double getK(double position,double velocity) {
         if (velocity>0) {
-           return position*(0.26-0.190)/54+0.27;
+           return position*(0.26-0.190)/54+0.3;
         }
         else if (velocity ==0){
            return 0.01; 
