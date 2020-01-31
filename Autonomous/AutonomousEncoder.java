@@ -19,25 +19,21 @@ public class AutonomousEncoder extends LinearOpMode  {
         r = new RobotController(this);
         r.aRamp = 1000.0;
         r.InitAutoWait();
-        //r.DriveEncodeRamp(0,50,0.2, 0.4, 10);
-        //r.DriveEncodeRamp(0,100,0.4, 0.25, 10);
-        r.DriveEncode(0,10,0.2, 5);
-        r.DriveEncode(-10,10,0.2, 5);
-        r.DriveEncode(-20,10,0.2, 5);
-        r.DriveEncode(-20,0,0.2, 5);
+
+        r.DriveEncode(0,8,0.2, 0.08);
+        r.DriveEncode(-2,10,0.2, 0.08);
+        r.DriveEncode(-20,10,0.2, 0.08);
+        r.DriveEncode(-20,0,0.2, 0.08);
         r.setEndAngle(90);
-        r.DriveEncodeRamp(50,0,0.16,0.4, 5);
-        r.DriveEncodeRamp(100,0,0.4,0.16, 5);
+        r.DriveEncodeRamp(50,0,0.16,0.4, 0.08);
+        r.DriveEncodeRamp(100,0,0.4,0.16, 0.08);
         r.setEndAngle(0);
-        r.DriveEncode(100,20,0.2,5);
-        r.DriveEncode(100,0,0.2,5);
-        r.setEndAngle(90);
-        r.DriveEncode(80,0,0.2,5);
+        r.DriveEncode(100,20,0.2,0.08);
+        r.DriveEncode(100,0,0.2,0.08);
+        r.DriveEncode(80,0,0.2,0.08);
         r.setEndAngle(0);
-        r.DriveEncode(50,0,0.2,5);
-        r.DriveEncode(20,0,0.2,5);
-        r.DriveEncode(0,0,0.2,5);
-        
+        r.DriveEncode(0,0,0.2,0.08);
+        r.log1.close();
 
 
         // r.DriveEncode(30,50,0.25, 5);

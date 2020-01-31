@@ -1,9 +1,10 @@
 
 package org.firstinspires.ftc.teamcode.NonOpModes;
 import org.firstinspires.ftc.teamcode.NonOpModes.Extender;
+import org.firstinspires.ftc.teamcode.NonOpModes.LogFile;
 import org.firstinspires.ftc.teamcode.NonOpModes.HallSensor;
 import org.firstinspires.ftc.teamcode.NonOpModes.Odometry;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.teamcode.NonOpModes.FollowLine;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
@@ -74,6 +75,8 @@ public class RobotController {
     final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0, kV = 0.011, kA = 0.004;
     final public double LStone = 20.3;
     
+    public LogFile log1;
+    
     public RobotController(LinearOpMode opModeIn) {
         opMode = opModeIn;
     }
@@ -140,7 +143,7 @@ public class RobotController {
         
         turn = robotAngle.performPID(error);
         // Drives the robot with these calculated values
-        DriveSimple(robotX, robotY, turn, 0.26+opMode.gamepad1.right_trigger*0.3+opMode.gamepad1.left_trigger*0.3);
+        DriveSimple(robotX, robotY, turn, 0.26+opMode.gamepad1.right_trigger*0.4+opMode.gamepad1.left_trigger*0.4);
           
     }
     
@@ -247,6 +250,7 @@ public class RobotController {
             //Optional parallel commands here;
         }
     }
+    
     //hetzelfde als drivedistance, maar met ramp
     public void DriveRamp(double x, double y, double speed1, double speed2){
         // Reset the encoders
@@ -296,7 +300,7 @@ public class RobotController {
         if (targetangle != endangle) {
                 double sign = Math.signum(angleDifference(endangle, targetangle));
                 boolean positive = sign>0;
-                targetangle -= sign*0.8*dt;
+                targetangle -= sign*dt;
                 if (positive ^ angleDifference(endangle,targetangle)>0) {
                     targetangle = endangle;
                 }
@@ -304,43 +308,39 @@ public class RobotController {
             }
     }
     // Drives with the help of odometry wheels to absolute position
-    public void DriveEncode(double targetx, double targety, double speed, double r) {
-        double distance = Math.sqrt((x-targetx)*(x-targetx)+(y-targety)*(y-targety));
-        rx = targetx + r*(targetx-x)/distance;
-        ry = targety + r*(targety-y)/distance;
-        double curdist;
+    public void DriveEncode(double targetx, double targety, double speed, double p) {
+        FollowLine follower = new FollowLine(prevx,prevy,targetx,targety,p);
         do {
             BasicLoopTele();
             updateTargetAngle();
-            curdist = Math.sqrt((x-rx)*(x-rx)+(y-ry)*(y-ry));
-            double drivex = (rx-x)/curdist, drivey = (ry-y)/curdist;
-            double robotX = -drivex*Math.cos(heading) - drivey*Math.sin(heading);
-            double robotY = -drivex*Math.sin(heading) + drivey*Math.cos(heading);
+            Point a = follower.Drive(x,y);
+            double robotX = -a.x*Math.cos(heading) - a.y*Math.sin(heading);
+            double robotY = -a.x*Math.sin(heading) + a.y*Math.cos(heading);
             double error = -angleDifference(targetangle, heading);
             double turn = robotAngle.performPID(error);
             DriveSimple(robotX, robotY, turn,  speed);
-        } while (opMode.opModeIsActive() && curdist > r);
+        } while (opMode.opModeIsActive()&&!follower.isFinished(x,y));
+        prevx = targetx;
+        prevy = targety;
     }
     public void setEndAngle(double angle) {
         endangle = Math.toRadians(angle);
     }
-    public void DriveEncodeRamp(double targetx, double targety, double speed1, double speed2, double r) {
-        double distance = Math.sqrt((x-targetx)*(x-targetx)+(y-targety)*(y-targety));
-        rx = targetx + r*(targetx-x)/distance;
-        ry = targety + r*(targety-y)/distance;
-        double curdist;
+    public void DriveEncodeRamp(double targetx, double targety, double speed1, double speed2, double p) {
+        FollowLine follower = new FollowLine(prevx,prevy,targetx,targety,p);
         do {
             BasicLoopTele();
             updateTargetAngle();
-            curdist = Math.sqrt((x-rx)*(x-rx)+(y-ry)*(y-ry));
-            double drivex = (rx-x)/curdist, drivey = (ry-y)/curdist;
-            double robotX = -drivex*Math.cos(heading) - drivey*Math.sin(heading);
-            double robotY = -drivex*Math.sin(heading) + drivey*Math.cos(heading);
-            double speedRamp = speed2 + Math.sqrt((double)(curdist-r)/distance)*(speed1-speed2);
+            Point a = follower.Drive(x,y);
+            double robotX = -a.x*Math.cos(heading) - a.y*Math.sin(heading);
+            double robotY = -a.x*Math.sin(heading) + a.y*Math.cos(heading);
             double error = -angleDifference(targetangle, heading);
             double turn = robotAngle.performPID(error);
-            DriveSimple(robotX, robotY, turn,  speedRamp);
-        } while (opMode.opModeIsActive() && curdist > r);
+            double speedRamp = speed1+(speed2-speed1)*follower.distanceDriven(x,y);
+            DriveSimple(robotX, robotY, turn, speedRamp);
+        } while (opMode.opModeIsActive()&&!follower.isFinished(x,y));
+        prevx = targetx;
+        prevy = targety;
     }
     public void DriveStop() {
         for (int i=0;i<4;i++) {
@@ -427,6 +427,9 @@ public class RobotController {
         hallSensor[1] = opMode.hardwareMap.get(HallSensor.class, "HallSensor2");
         hallSensor[0].clrErr();
         hallSensor[1].clrErr();
+        log1 = new LogFile();
+        log1.init("loggingauto.txt");
+        log1.write("time,x,y,theta");
         odometry = new Odometry(this);
     }
         
@@ -477,6 +480,8 @@ public class RobotController {
             }
 
             manageExtender.update();
+            log1.write(String.valueOf(prevtime)+","+String.valueOf(x)+","+String.valueOf(y)+","+String.valueOf(heading)+"\n");
+            log1.flush();
             opMode.telemetry.addData("x", x);
             opMode.telemetry.addData("y", y);
             opMode.telemetry.addData("dt", dt);
