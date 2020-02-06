@@ -25,7 +25,7 @@ public class LeagueMeet2 extends LinearOpMode {
 
     // Support class for robot control
     r = new RobotController(this);
-
+    r.initScreen();
     r.InitAndWait();
     double prevposition = 0;
     boolean prevA = false, prevB = false, prevX = false, prevY = false, prevUp = false, prevDown = false;
@@ -40,9 +40,11 @@ public class LeagueMeet2 extends LinearOpMode {
 
       if (a && !prevA) {
         r.manageExtender.enterNext();
+        r.updateScreen();
       }
       else if (b && !prevB) {
         r.manageExtender.enterPrev();
+        r.updateScreen();
       }
 
       // Adds or subtracts one from the stone index height
@@ -65,9 +67,9 @@ public class LeagueMeet2 extends LinearOpMode {
       if (y && !prevY) {
         capstoneDown = !capstoneDown;
         if (capstoneDown) {
-          r.GripBlock.setPosition(0);
-          r.DriveDistance(-8,-9,0.2);
-          r.Capstone.setPosition(0);
+          r.manageExtender.enterCapstone();
+
+
 
         } else {
           r.Capstone.setPosition(1);
@@ -84,5 +86,7 @@ public class LeagueMeet2 extends LinearOpMode {
       r.DriveGyro();
       idle();
     }
+    //r.log2.close();
+    r.closeScreen();
   }
 }

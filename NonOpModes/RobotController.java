@@ -29,6 +29,13 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import java.util.Arrays;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+import android.app.Activity;
+import android.graphics.Color;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.RelativeLayout;
+import android.util.TypedValue;
+
 /**
  * This file contains an minimal example of a Linear "OpMode". An OpMode is a 'program' that runs in either
  * the autonomous or the teleop period of an FTC match. The names of OpModes appear on the menu
@@ -45,7 +52,7 @@ public class RobotController {
     
     // Declare OpMode members.
     public ElapsedTime runtime;
-    private LinearOpMode opMode;
+    public LinearOpMode opMode;
     public DcMotor[] driveMotors = {null,null,null,null};
     public Servo GripBlock = null, Capstone = null, Foundation1, Foundation2;
     public DcMotor extender = null; 
@@ -75,8 +82,10 @@ public class RobotController {
     final public static double kG = 0.092, kF = 0.108, posToY = 57.0/820.0, kV = 0.011, kA = 0.004;
     final public double LStone = 20.3;
     
-    public LogFile log1;
-    
+    public LogFile log1, log2;
+    public TextView mTextView;
+    RelativeLayout relativeLayout;
+    public int stateScreen;
     public RobotController(LinearOpMode opModeIn) {
         opMode = opModeIn;
     }
@@ -211,13 +220,14 @@ public class RobotController {
         newangle = Math.toRadians(newangle);
         double sign = angleDifference(newangle, targetangle);
         targetangle = newangle;
-
+        endangle = newangle;
         do {
             BasicLoopTele();
             DriveSimple(0,0,sign*speed,0.3);
 
         } while (opMode.opModeIsActive() && Math.abs(angleDifference(heading,newangle)) > 0.2);
         robotAngle.reset();
+        
     }
     
     
@@ -308,12 +318,12 @@ public class RobotController {
             }
     }
     // Drives with the help of odometry wheels to absolute position
-    public void DriveEncode(double targetx, double targety, double speed, double p) {
-        FollowLine follower = new FollowLine(prevx,prevy,targetx,targety,p);
+    public void DriveEncode(double targetx, double targety, double speed, double skipDistance) {
+        FollowLine follower = new FollowLine(prevx,prevy,targetx,targety, skipDistance);
         do {
             BasicLoopTele();
             updateTargetAngle();
-            Point a = follower.Drive(x,y);
+            Point a = follower.Drive(x,y,speed);
             double robotX = -a.x*Math.cos(heading) - a.y*Math.sin(heading);
             double robotY = -a.x*Math.sin(heading) + a.y*Math.cos(heading);
             double error = -angleDifference(targetangle, heading);
@@ -326,17 +336,17 @@ public class RobotController {
     public void setEndAngle(double angle) {
         endangle = Math.toRadians(angle);
     }
-    public void DriveEncodeRamp(double targetx, double targety, double speed1, double speed2, double p) {
-        FollowLine follower = new FollowLine(prevx,prevy,targetx,targety,p);
+    public void DriveEncodeRamp(double targetx, double targety, double speed1, double speed2, double skipDistance) {
+        FollowLine follower = new FollowLine(prevx,prevy,targetx,targety,skipDistance);
         do {
             BasicLoopTele();
             updateTargetAngle();
-            Point a = follower.Drive(x,y);
+            double speedRamp = speed1+(speed2-speed1)*Math.sqrt(follower.distanceDriven(x,y));
+            Point a = follower.Drive(x,y,speedRamp);
             double robotX = -a.x*Math.cos(heading) - a.y*Math.sin(heading);
             double robotY = -a.x*Math.sin(heading) + a.y*Math.cos(heading);
             double error = -angleDifference(targetangle, heading);
             double turn = robotAngle.performPID(error);
-            double speedRamp = speed1+(speed2-speed1)*follower.distanceDriven(x,y);
             DriveSimple(robotX, robotY, turn, speedRamp);
         } while (opMode.opModeIsActive()&&!follower.isFinished(x,y));
         prevx = targetx;
@@ -427,10 +437,13 @@ public class RobotController {
         hallSensor[1] = opMode.hardwareMap.get(HallSensor.class, "HallSensor2");
         hallSensor[0].clrErr();
         hallSensor[1].clrErr();
+
+        odometry = new Odometry(this);
+    }
+    public void InitAutoLog() {
         log1 = new LogFile();
         log1.init("loggingauto.txt");
-        log1.write("time,x,y,theta");
-        odometry = new Odometry(this);
+        log1.write("time,x,y,theta\n");
     }
         
     private void InitWaitInside() {
@@ -456,6 +469,9 @@ public class RobotController {
         Init();
         InitWaitInside();
         resetExtender();
+        // log2 = new LogFile();
+        // log2.init("loggingext.txt");
+        // log2.write("time,pos,targetpos\n");
         runtime = new ElapsedTime();
         manageExtender = new Extender(this);
     }
@@ -478,12 +494,15 @@ public class RobotController {
             if (odometry != null) {
                 odometry.update(heading);
             }
-
+            if (log1 != null) {
+                log1.write(String.valueOf(prevtime)+","+String.valueOf(x)+","+String.valueOf(y)+","+String.valueOf(heading)+"\n");
+                log1.flush();
+            }
             manageExtender.update();
-            log1.write(String.valueOf(prevtime)+","+String.valueOf(x)+","+String.valueOf(y)+","+String.valueOf(heading)+"\n");
-            log1.flush();
+
             opMode.telemetry.addData("x", x);
             opMode.telemetry.addData("y", y);
+            opMode.telemetry.addData("fps", 1/dt);
             opMode.telemetry.addData("dt", dt);
             opMode.telemetry.addData("state", manageExtender.state);
             opMode.telemetry.addData("Extender Position", manageExtender.position);
@@ -495,6 +514,39 @@ public class RobotController {
         return heading;
     }
     
+    public void initScreen() {
+        int relativeLayoutId = opMode.hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", opMode.hardwareMap.appContext.getPackageName());
+        relativeLayout = (RelativeLayout)((Activity) opMode.hardwareMap.appContext).findViewById(relativeLayoutId);
+        mTextView = new TextView(opMode.hardwareMap.appContext);
+        relativeLayout.post(new Runnable() {
+        public void run() {
+        mTextView.setText("1");
+        mTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP,500);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+  
+          relativeLayout.addView(mTextView, params);
+        }
+    });
+    }
+    
+    public void updateScreen() {
+        stateScreen = manageExtender.state.ordinal()+1;
+        relativeLayout.post(new Runnable() {
+            public void run() {
+               mTextView.setText(String.valueOf(stateScreen));
+            }
+        });
+    }
+    public void closeScreen() {
+        
+        relativeLayout.post(new Runnable() {
+            public void run() {
+                relativeLayout.removeView(mTextView);
+            }
+        });
+
+    }
     public double angleDifference(double heading, double targetAngle) {
         // Calculates the angle difference. Always between -180 and 180
         return ((targetAngle-heading+5*Math.PI) % (2*Math.PI)) -  Math.PI;

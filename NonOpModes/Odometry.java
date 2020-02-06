@@ -23,7 +23,7 @@ public class Odometry
     final double degToCm = 2.8725;
     private RobotController r;
     private double x, y;
-    final double xoffset = 4, yoffset = 15;
+    final double xoffset = 4.5, yoffset = 13;
     double prevtheta = 0, prevphi1, prevphi2;
     public Odometry(RobotController R) {
 
@@ -53,7 +53,6 @@ public class Odometry
             double dphi1 = phi1 -prevphi1; 
             double dphi2 = phi2 -prevphi2; 
             
-            ////
 
             
             double[] dP = deltaPos(heading,heading-prevtheta, dphi1*degToCm, -dphi2*degToCm);

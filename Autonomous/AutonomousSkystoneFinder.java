@@ -27,6 +27,7 @@ public class AutonomousSkystoneFinder extends LinearOpMode  {
         if (r.IsSkystone()) {
             GrabStone();
             r.DriveRotate(-90*alliance);
+            
             return 0;
         }
         r.DriveDistance(1*r.LStone*alliance,0, 0.4);

@@ -15,9 +15,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class Extender {
   final double Grabbing = 0.5;
   private RobotController r;
-  MotionProfile mp;
+  public MotionProfile mp;
   PIDFController pidf;
-  ExtenderState state;
+  public ExtenderState state;
   double newTime;
   public int index;
   double t;
@@ -45,7 +45,7 @@ public class Extender {
     public void initState(ExtenderState state, double position) {
     switch(state) {
       case Searching:
-        mp = new MotionProfile(position, 9, 25, 100);
+        mp = new MotionProfile(position, 7, 25, 100);
         r.GripBlock.setPosition(1);
         // code block
         break;
@@ -102,6 +102,7 @@ public class Extender {
       t = 0; 
     }
     
+    
     public void raise() {
       if (index<5) index++;
       enterSame();
@@ -133,6 +134,18 @@ public class Extender {
     }
     
     public void enterCapstone() {
+      r.GripBlock.setPosition(0);
+      r.DriveDistance(0,-7,0.3);
+      r.DriveStop();
+      mp = new MotionProfile(position, index*10.16+3, 20, 40);
+      pidf.reset();
+      newTime = r.runtime.time();
+      t = 0; 
+      while (r.opMode.opModeIsActive() && running()) {
+            r.BasicLoopTele();
+      }
+      
+      r.Capstone.setPosition(0);
       
     }
     public void update() {
@@ -144,7 +157,9 @@ public class Extender {
         r.GripBlock.setPosition(Grabbing); 
         
       }
+      //r.log2.write(String.valueOf(r.prevtime)+","+String.valueOf(position)+","+String.valueOf(mp.getPos(t))+"\n");
+      //r.log2.flush();
       prevposition = position;
-      pidf.setPID(0.07,0.03,0.03);
+      pidf.setPID(0.3,0.03,0.02);
   }
 }

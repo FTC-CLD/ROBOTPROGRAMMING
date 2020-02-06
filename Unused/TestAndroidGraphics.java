@@ -87,9 +87,8 @@ public class TestAndroidGraphics extends LinearOpMode {
     telemetry.update();
     int relativeLayoutId = hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", hardwareMap.appContext.getPackageName());
     relativeLayout = (RelativeLayout)((Activity) hardwareMap.appContext).findViewById(relativeLayoutId);
-    telemetry.addData("Werkt","nog steeds");
     mTextView = new TextView(hardwareMap.appContext);
-  relativeLayout.post(new Runnable() {
+    relativeLayout.post(new Runnable() {
         public void run() {
         mTextView.setText("1");
         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP,500);

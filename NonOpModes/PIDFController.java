@@ -39,7 +39,7 @@ public class PIDFController
 
     public double getK(double position,double velocity) {
         if (velocity>0) {
-           return position*(0.26-0.190)/54+0.3;
+           return position*(0.26-0.190)/54+0.34;
         }
         else if (velocity ==0){
            return 0.01; 
