@@ -67,6 +67,9 @@ public class RobotController {
     public double x=0,  y=0, heading, prevx, prevy;
     public double rx, ry, r, hr;
     
+    // Blue = 1, Red  = -1
+    public int BlueOrRed;
+    
     public static int timer = 0;
     public double aRamp = 2.4, dt = 0.01, prevtime = -0.01;
     
@@ -211,12 +214,11 @@ public class RobotController {
     
     // Turns the robot to absolute angle 
     public void DriveRotate(double newangle) {
-
         DriveRotate(newangle, 0.2);
     }
         // Turns the robot to absolute angle
     public void DriveRotate(double newangle, double speed) {
-
+        newangle *= BlueOrRed;
         newangle = Math.toRadians(newangle);
         double sign = angleDifference(newangle, targetangle);
         targetangle = newangle;
@@ -319,6 +321,7 @@ public class RobotController {
     }
     // Drives with the help of odometry wheels to absolute position
     public void DriveEncode(double targetx, double targety, double speed, double skipDistance) {
+        targetx *= BlueOrRed;
         FollowLine follower = new FollowLine(prevx,prevy,targetx,targety, skipDistance);
         do {
             BasicLoopTele();
@@ -334,9 +337,11 @@ public class RobotController {
         prevy = targety;
     }
     public void setEndAngle(double angle) {
+        endangle *= BlueOrRed;
         endangle = Math.toRadians(angle);
     }
     public void DriveEncodeRamp(double targetx, double targety, double speed1, double speed2, double skipDistance) {
+        targetx *= BlueOrRed;
         FollowLine follower = new FollowLine(prevx,prevy,targetx,targety,skipDistance);
         do {
             BasicLoopTele();
@@ -413,6 +418,7 @@ public class RobotController {
         driveMotors[3].setDirection(DcMotor.Direction.FORWARD);
         x=0;
         y=0;
+        BlueOrRed = 1;
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;

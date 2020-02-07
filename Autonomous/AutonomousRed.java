@@ -7,7 +7,7 @@ import java.util.Locale;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.NonOpModes.RobotController;
 import org.firstinspires.ftc.teamcode.NonOpModes.Extender;
-@Autonomous(name="AutonomousRed", group="Linear Opmode")
+@Autonomous(name="OldRed", group="Linear Opmode")
 
 public class AutonomousRed extends LinearOpMode  {
     public RobotController r;

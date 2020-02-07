@@ -9,9 +9,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.NonOpModes.RobotController;
 import org.firstinspires.ftc.teamcode.NonOpModes.Extender;
 import org.firstinspires.ftc.teamcode.NonOpModes.Point;
-@Autonomous(name="BlueEncoders", group="Linear Opmode")
+@Autonomous(name="RedEncoders", group="Linear Opmode")
 //@Disabled
-public class AutonomousBlueEncoders extends LinearOpMode  {
+public class AutonomousRedEncoders extends LinearOpMode  {
     public RobotController r;
 
     
@@ -52,6 +52,7 @@ public class AutonomousBlueEncoders extends LinearOpMode  {
     public void runOpMode() {
         // Support class for robot control
         r = new RobotController(this);
+        r.BlueOrRed = -1;
         r.aRamp = 1000.0;
         r.InitAutoWait();
         r.hooksUp();
@@ -105,12 +106,5 @@ public class AutonomousBlueEncoders extends LinearOpMode  {
         r.manageExtender.enterNext();
         r.DriveEncodeRamp( 92 , 58 ,1,0.3,1);
         r.DriveStop();
-
-        
-
-        
-    
-        
-
     }
 }
